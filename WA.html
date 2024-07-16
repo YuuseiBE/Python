@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安全なPython文字列評価と動的コード操作</title>
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: red; /* 背景色を赤色に設定 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            color: #333;
+        }
+        header {
+            background-color: #6e8efb;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            width: 100%;
+        }
+        main {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            max-width: 800px;
+            width: 90%;
+            margin: 20px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: monospace;
+        }
+        footer {
+            margin-top: auto;
+            background-color: #6e8efb;
+            color: white;
+            text-align: center;
+            padding: 10px 20px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>安全なPython文字列評価と動的コード操作</h1>
+    </header>
+    <main>
+        <section>
+            <h2>はじめに</h2>
+            <p>Pythonには、文字列の評価や動的なコード操作を行うための複数の手法が存在します。</p>
+            <p>文字列の実行では、<code>eval()</code>や<code>exec()</code>がポピュラーですが、本記事では安全で信頼性の高い方法として<code>ast.literal_eval()</code>、<code>getattr()</code>の活用方法を紹介します。</p>
+        </section>
+        
+        <section>
+            <h2>exec, evalとそのセキュリティリスク</h2>
+            <p>Pythonの<code>exec()</code>を使用すると、文字列をPythonのコードとして実行することができます。以下は<code>exec()</code>の基本的な使用例です。</p>
+            <pre><code>agg = "sum"
+l = [1, 2, 3]
+exec(f'result = {agg}(l)')
+print(result)</code></pre>
+            <p><code>eval()</code>を使用すると、文字列をPythonの式として評価し、結果を返すことができます。以下は<code>eval()</code>の基本的な使用例です。</p>
+            <pre><code>agg = "sum"
+result = eval(f'{agg}(l)')
+print(result)</code></pre>
+            <p>外部からの入力を直接実行する場合、<code>exec()</code>と<code>eval()</code>を使用するとインジェクション攻撃や予期せぬバグの発生など、セキュリティ上のリスクが高まります。</p>
+            <p>リスクの例として<code>eval("os.remove('*')", {})</code>が実行されてしまうことです。</p>
+        </section>
+
+        <section>
+            <h2>リテラルのみを含む式の変換</h2>
+            <p>Pythonのコード上での書き方で記述された文字列に対して<code>ast.literal_eval()</code>を用いることでをリストや辞書に変換できます。</p>
+            <pre><code>import ast
+l = ast.literal_eval('["x", "y"]')
+print(l)
+# ['x', 'y']</code></pre>
+            <p><code>ast.literal_eval</code>では、<code>eval("os.remove('*')", {})</code>といった関数の実行はできないので<code>eval</code>よりも格段に安全です。</p>
+        </section>
+
+        <section>
+            <h2>クラスのメソッドの実行</h2>
+            <p>クラスのメソッドが文字列で与えられる場合には<code>getattr()</code>を用いることでメソッドを実行できます。</p>
+            <pre><code># getattr関数の利用例
+class MyClass:
+    def my_method(self):
+        print("Hello, World!")
+obj = MyClass()
+method_name = "my_method"
+# getattrを使用して動的にメソッドを実行
+getattr(obj, method_name)()
+# 結果: Hello, World!</code></pre>
+            <p><code>getattr()</code>を使用して動的にオブジェクトのメソッドを実行しています。</p>
+            <p><code>exec()</code>、<code>eval()</code>と比べて自由度が下がっており、クラスのメソッドしか利用できないので<code>exec()</code>、<code>eval()</code>と比ベると安全です。</p>
+        </section>
+
+        <section>
+            <h2>組み込み関数の実行</h2>
+            <p>組み込み関数は<code>builtins</code>に含まれているので、上記と同様に<code>getattr()</code>を用いることで実行できます。</p>
+            <pre><code>import builtins
+func = getattr(builtins, agg)
+result = func(l)
+print(result)</code></pre>
+        </section>
+
+        <section>
+            <h2>まとめ</h2>
+            <p><code>exec</code>や<code>eval</code>は注意深く利用しましょう。<code>ast.literal_eval()</code>などの代替手段を検討しましょう。</p>
+        </section>
+        <section>
+            <h2>引用元</h2>
+            <p>本記事の内容は以下の資料を参考にしています。</p>
+            <ul>
+                <li>Python公式ドキュメント: <a href="https://docs.python.org/ja/3/library/functions.html#eval" target="_blank">https://docs.python.org/ja/3/library/functions.html#eval</a></li>
+                <li>ASTモジュールについて: <a href="https://docs.python.org/ja/3/library/ast.html" target="_blank">https://docs.python.org/ja/3/library/ast.html</a></li>
+                <li>セキュリティに関するベストプラクティス: <a href="https://realpython.com/python-security/" target="_blank">https://realpython.com/python-security/</a></li>
+                <li>Zenn記事「Pythonのexecとevalのセキュリティリスクを理解する」: <a href="https://zenn.dev/sergicalsix/articles/92b9526e20c7a6" target="_blank">https://zenn.dev/sergicalsix/articles/92b9526e20c7a6</a></li>
+                <li>Real Python記事「How to Work With Python’s eval()」: <a href="https://realpython.com/python-eval-function/" target="_blank">https://realpython.com/python-eval-function/</a></li>
+                <li>Python Tipsブログ「Pythonのevalとexec」: <a href="https://www.python.ambitious-engineer.com/archives/522" target="_blank">https://www.python.ambitious-engineer.com/archives/522</a></li>
+            </ul>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2024 安全なPython文字列評価と動的コード操作. All rights reserved.</p>
+    </footer>
+</body>
+</html>
